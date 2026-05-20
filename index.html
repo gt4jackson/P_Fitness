@@ -331,6 +331,12 @@ textarea{resize:vertical;min-height:60px}
   <div class="card">
     <div class="card-title">Send Motivational Message</div>
     <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px">Send Nellie a fun or inspirational message!</p>
+    <div class="form-group"><label class="form-label">From</label>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm" id="from-dad" onclick="setMsgFrom('Dad')" style="flex:1;background:var(--accent);color:white">Dad</button>
+        <button class="btn btn-sm" id="from-mom" onclick="setMsgFrom('Mom')" style="flex:1;background:var(--surface2);color:var(--text-dim);border:1px solid var(--border)">Mom</button>
+      </div>
+    </div>
     <div style="margin-bottom:12px" id="preset-messages"></div>
     <div class="form-group"><label class="form-label">Custom Message</label><textarea id="coach-msg" placeholder="You're doing amazing, Nellie! Keep it up!"></textarea></div>
     <div class="form-group"><label class="form-label">Image URL (optional)</label><input type="url" id="coach-msg-img" placeholder="https://..."></div>
@@ -1201,6 +1207,19 @@ function renderPresetMessages(){
   document.getElementById('preset-messages').innerHTML=html;
 }
 
+let msgFrom='Dad';
+function setMsgFrom(who){
+  msgFrom=who;
+  const dadBtn=document.getElementById('from-dad'),momBtn=document.getElementById('from-mom');
+  if(who==='Dad'){
+    dadBtn.style.background='var(--accent)';dadBtn.style.color='white';dadBtn.style.border='none';
+    momBtn.style.background='var(--surface2)';momBtn.style.color='var(--text-dim)';momBtn.style.border='1px solid var(--border)';
+  } else {
+    momBtn.style.background='var(--accent)';momBtn.style.color='white';momBtn.style.border='none';
+    dadBtn.style.background='var(--surface2)';dadBtn.style.color='var(--text-dim)';dadBtn.style.border='1px solid var(--border)';
+  }
+}
+
 function sendCoachMessage(){
   const text=document.getElementById('coach-msg').value.trim();
   if(!text){toast('Write a message first!');return}
@@ -1210,7 +1229,7 @@ function sendCoachMessage(){
   const msg={
     text,
     img:img||null,
-    from:'Dad',
+    from:msgFrom,
     date:todayStr(),
     time:now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})
   };

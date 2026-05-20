@@ -262,7 +262,7 @@ textarea{resize:vertical;min-height:60px}
   <div class="card">
     <div class="card-title">Google Sheets Sync</div>
     <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px">Connect to Google Sheets for backup &amp; coach monitoring.</p>
-    <div class="form-group"><label class="form-label">Apps Script URL</label><input type="url" id="set-sync-url" placeholder="https://script.google.com/macros/s/.../exec"></div>
+    <div class="form-group"><label class="form-label">Apps Script URL</label><input type="url" id="set-sync-url" value="https://script.google.com/macros/s/AKfycbxG1tbUEKeWGU28WiHePnh_lJO1G8vDuP41Usv1sLTDWX41WjXF3n1BbEiemcBxVQw/exec"></div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-primary" onclick="saveSyncSettings()" style="flex:1">Save Sync</button>
       <button class="btn btn-secondary" onclick="fullSync()" style="flex:1">Sync All Now</button>
@@ -332,6 +332,12 @@ textarea{resize:vertical;min-height:60px}
     <div class="card-title">Sent Messages</div>
     <div id="coach-sent-messages"></div>
   </div>
+  <div class="card">
+    <div class="card-title">Coach Settings</div>
+    <div class="form-group"><label class="form-label">Change Coach PIN</label><input type="password" id="new-pin" placeholder="Enter new PIN" maxlength="6" inputmode="numeric"></div>
+    <div class="form-group"><label class="form-label">Confirm New PIN</label><input type="password" id="confirm-pin" placeholder="Confirm new PIN" maxlength="6" inputmode="numeric"></div>
+    <button class="btn btn-primary" onclick="changeCoachPIN()">Update PIN</button>
+  </div>
 </div>
 
 </div><!-- /app -->
@@ -388,7 +394,7 @@ function getExercises(){
 function getLogs(){return load('logs',{})}
 function getMessages(){return load('messages',[])}
 function getCoachPIN(){return load('coachPIN','1234')}
-function getSyncSettings(){return load('syncSettings',{url:''})}
+function getSyncSettings(){return load('syncSettings',{url:'https://script.google.com/macros/s/AKfycbxG1tbUEKeWGU28WiHePnh_lJO1G8vDuP41Usv1sLTDWX41WjXF3n1BbEiemcBxVQw/exec'})}
 function getTheme(){return load('theme',null)}
 function getPoints(){return load('points',0)}
 
@@ -1218,6 +1224,18 @@ function renderSentMessages(){
     html+=`<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><div>${escapeHTML(m.text)}</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">${m.date} ${m.time||''}</div></div>`;
   });
   document.getElementById('coach-sent-messages').innerHTML=html;
+}
+
+function changeCoachPIN(){
+  const newPin=document.getElementById('new-pin').value.trim();
+  const confirmPin=document.getElementById('confirm-pin').value.trim();
+  if(!newPin){toast('Enter a new PIN');return}
+  if(newPin!==confirmPin){toast('PINs don\'t match!');return}
+  if(newPin.length<4){toast('PIN must be at least 4 characters');return}
+  save('coachPIN',newPin);
+  document.getElementById('new-pin').value='';
+  document.getElementById('confirm-pin').value='';
+  toast('Coach PIN updated!');
 }
 
 // ================================================================

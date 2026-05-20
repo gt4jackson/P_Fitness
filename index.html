@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a1040">
+<link rel="manifest" href="manifest.json">
+<title>P Fitness — Nellie's Fitness Tracker</title>
+<style>
+:root {
+  --bg: #1a1040; --surface: #261858; --surface2: #332070; --border: #443090;
+  --text: #f0eef8; --text-dim: #a099c0;
+  --accent: #e056a0; --accent-glow: rgba(224,86,160,0.25);
+  --green: #5db835; --green-glow: rgba(93,184,53,0.25);
+  --red: #f27068; --red-glow: rgba(242,112,104,0.25);
+  --yellow: #f0c040; --yellow-glow: rgba(240,192,64,0.25);
+  --orange: #f0a030; --orange-glow: rgba(240,160,48,0.25);
+  --radius: 14px; --radius-sm: 8px;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+#app{flex:1;overflow-y:auto;overflow-x:hidden;padding:8px 16px 80px;-webkit-overflow-scrolling:touch}
+.page{display:none}.page.active{display:block;animation:pageFadeIn .15s ease}
+@keyframes pageFadeIn{from{opacity:0}to{opacity:1}}
+
+/* Top bar */
+.top-bar{position:sticky;top:0;z-index:100;background:var(--bg);padding:8px 16px 0}
+.status-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.status-left{display:flex;align-items:center;gap:10px}
+.status-streak{font-size:13px;font-weight:700;color:var(--green)}
+.status-level{font-size:13px;font-weight:700;color:var(--accent)}
+.status-pts{font-size:12px;color:var(--text-dim)}
+.menu-btn{background:none;border:none;color:var(--text-dim);font-size:22px;cursor:pointer;padding:4px 8px}
+
+/* Bottom nav */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--surface);border-top:1px solid var(--border);z-index:100;padding:4px 0;padding-bottom:env(safe-area-inset-bottom,4px)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border:none;background:none;color:var(--text-dim);font-size:10px;font-weight:600;cursor:pointer;font-family:var(--font)}
+.nav-btn.active{color:var(--accent)}
+.nav-btn svg{width:22px;height:22px}
+
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px;overflow:hidden}
+.card-title{font-size:13px;font-weight:700;letter-spacing:.4px;color:var(--text-dim);margin-bottom:12px;padding-left:10px;border-left:3px solid var(--accent)}
+h1{font-size:22px;font-weight:700;margin-bottom:4px}h2{font-size:18px;font-weight:600;margin-bottom:16px}
+.metric{display:flex;align-items:baseline;gap:6px}.metric-value{font-size:36px;font-weight:800}.metric-unit{font-size:14px;color:var(--text-dim)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.badge-green{background:var(--green-glow);color:var(--green)}.badge-red{background:var(--red-glow);color:var(--red)}.badge-accent{background:var(--accent-glow);color:var(--accent)}.badge-yellow{background:var(--yellow-glow);color:var(--yellow)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:6px}
+.progress-fill{height:100%;border-radius:4px;transition:width .5s ease}
+.progress-fill.green{background:var(--green)}.progress-fill.accent{background:var(--accent)}.progress-fill.orange{background:var(--orange)}.progress-fill.yellow{background:var(--yellow)}
+
+/* Forms */
+.form-group{margin-bottom:16px}.form-label{display:block;font-size:13px;font-weight:600;color:var(--text-dim);margin-bottom:6px}
+input[type="number"],input[type="date"],input[type="text"],input[type="password"],input[type="url"],textarea,select{width:100%;max-width:100%;padding:14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:16px;font-family:var(--font);transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+textarea{resize:vertical;min-height:60px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 20px;border:none;border-radius:var(--radius);font-size:15px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .2s}
+.btn-primary{background:var(--accent);color:white;width:100%}.btn-primary:active{transform:scale(.97);opacity:.9}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}.btn-danger{background:var(--red-glow);color:var(--red)}.btn-sm{padding:8px 14px;font-size:13px}
+.clr-pick{width:100%;height:44px;padding:2px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);cursor:pointer}
+
+/* Set tracker */
+.set-log{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.set-chip{display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:26px;padding:0 6px;border-radius:13px;font-size:12px;font-weight:700;background:var(--accent-glow);color:var(--accent);border:1px solid var(--accent)}
+.set-total{font-size:13px;font-weight:700;color:var(--green);margin-left:4px}
+.add-set-row{display:flex;align-items:center;gap:6px;margin-top:6px}
+.add-set-input{width:60px;text-align:center;padding:6px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;font-family:var(--font)}
+.add-set-btn{padding:6px 12px;border:none;border-radius:var(--radius-sm);background:var(--accent);color:white;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)}
+.add-set-btn:active{transform:scale(.95)}
+
+/* Exercise row */
+.exercise-block{padding:12px 0;border-bottom:1px solid var(--border)}
+.exercise-block:last-child{border-bottom:none}
+.exercise-header{display:flex;justify-content:space-between;align-items:center}
+.exercise-name{font-size:15px;font-weight:600}.exercise-icon{font-size:18px;margin-right:6px}
+.exercise-target{font-size:12px;color:var(--text-dim)}
+.exercise-progress{margin-top:4px}
+
+/* Streak */
+.streak-display{display:flex;align-items:center;gap:8px;padding:12px;border-radius:var(--radius-sm);background:var(--surface2)}
+.streak-number{font-size:28px;font-weight:800}.streak-label{font-size:12px;color:var(--text-dim)}
+
+/* Mini chart */
+.mini-chart{width:100%;height:120px}
+
+/* Messages */
+.msg-card{background:var(--surface2);border-radius:var(--radius);padding:14px;margin-bottom:10px;border-left:3px solid var(--accent);animation:msgSlide .3s ease}
+@keyframes msgSlide{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.msg-text{font-size:15px;line-height:1.5;margin-bottom:6px}.msg-from{font-size:11px;color:var(--text-dim)}.msg-img{width:100%;border-radius:var(--radius-sm);margin-bottom:8px;max-height:200px;object-fit:cover}
+.msg-empty{text-align:center;padding:40px 20px;color:var(--text-dim)}
+
+/* Toast */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);background:var(--green);color:#000;padding:12px 24px;border-radius:30px;font-size:14px;font-weight:600;z-index:1000;transition:transform .3s ease;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* Gamification */
+.xp-bar-outer{background:var(--border);border-radius:10px;height:14px;overflow:hidden;position:relative}
+.xp-bar-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,var(--accent),#9060ff);transition:width .8s ease}
+.xp-bar-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.level-badge{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#9060ff);font-size:16px;font-weight:800;color:white;box-shadow:0 2px 8px var(--accent-glow)}
+
+/* Medal */
+.medal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.medal-card{background:var(--surface2);border-radius:var(--radius-sm);padding:10px;text-align:center;border:1px solid var(--border);transition:all .3s}
+.medal-card.earned{border-color:var(--yellow);box-shadow:0 0 12px var(--yellow-glow)}.medal-card.locked{opacity:.4}
+.medal-icon{font-size:28px;margin-bottom:4px}.medal-name{font-size:11px;font-weight:600}.medal-desc{font-size:10px;color:var(--text-dim);margin-top:2px}
+
+/* Points popup */
+.points-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);background:var(--surface);border:2px solid var(--yellow);border-radius:var(--radius);padding:24px;text-align:center;z-index:300;transition:transform .4s cubic-bezier(.175,.885,.32,1.275);box-shadow:0 0 40px var(--yellow-glow)}
+.points-popup.show{transform:translate(-50%,-50%) scale(1)}.points-popup .big-points{font-size:48px;font-weight:800;color:var(--yellow)}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:flex-end;justify-content:center}.modal-overlay.show{display:flex}
+.modal-content{background:var(--surface);border-radius:var(--radius) var(--radius) 0 0;padding:24px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto}.modal-title{font-size:18px;font-weight:700;margin-bottom:16px}
+
+/* Menu overlay */
+.menu-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200}.menu-overlay.show{display:flex;justify-content:flex-end}
+.menu-panel{width:260px;background:var(--surface);padding:20px;overflow-y:auto;animation:menuSlide .2s ease}
+@keyframes menuSlide{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.menu-item{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);color:var(--text);font-size:15px;font-weight:500;cursor:pointer;background:none;border-left:none;border-right:none;border-top:none;width:100%;font-family:var(--font)}
+.menu-item svg{width:20px;height:20px;color:var(--text-dim)}
+
+/* Coach badge */
+.coach-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;background:linear-gradient(135deg,var(--orange-glow),var(--yellow-glow));color:var(--orange)}
+
+/* Preset msg chips */
+.preset-chip{display:inline-block;padding:8px 14px;border-radius:20px;font-size:13px;font-weight:500;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;margin:4px;transition:all .2s}
+.preset-chip:active{background:var(--accent-glow);border-color:var(--accent);color:var(--accent)}
+
+/* Toggle */
+.toggle-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}.toggle-row:last-child{border-bottom:none}.toggle-label{font-size:15px}.toggle-sub{font-size:12px;color:var(--text-dim)}
+.toggle{position:relative;width:48px;height:28px;cursor:pointer}.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:14px;transition:.3s}
+.toggle-slider:before{content:'';position:absolute;height:22px;width:22px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s}
+.toggle input:checked+.toggle-slider{background:var(--accent)}.toggle input:checked+.toggle-slider:before{transform:translateX(20px)}
+
+/* Color preview */
+.color-preview{margin-top:12px;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border)}
+
+/* History */
+.history-item{padding:12px;border-bottom:1px solid var(--border)}.history-item:last-child{border-bottom:none}
+.history-date{font-size:13px;color:var(--text-dim);margin-bottom:4px}.history-exercises{font-size:14px}
+
+/* Confetti canvas */
+#confetti-canvas{position:fixed;inset:0;pointer-events:none;z-index:400}
+</style>
+</head>
+<body>
+<canvas id="confetti-canvas"></canvas>
+<div class="toast" id="toast"></div>
+<div class="points-popup" id="points-popup">
+  <div style="font-size:14px;color:var(--text-dim);margin-bottom:4px;">Points Earned</div>
+  <div class="big-points" id="popup-points">+50</div>
+  <div style="font-size:13px;color:var(--text);margin-top:8px;" id="popup-breakdown"></div>
+</div>
+
+<div class="top-bar">
+  <div class="status-row">
+    <div class="status-left">
+      <span class="status-streak" id="status-streak">0-day streak</span>
+      <span style="color:var(--border)">|</span>
+      <span class="status-level">Lv <span id="status-level">1</span></span>
+      <span class="status-pts" id="status-pts">0 pts</span>
+    </div>
+    <button class="menu-btn" onclick="toggleMenu()" aria-label="Menu">&#9776;</button>
+  </div>
+</div>
+
+<div class="menu-overlay" id="menu-overlay" onclick="toggleMenu()">
+  <div class="menu-panel" onclick="event.stopPropagation()">
+    <div style="margin-bottom:16px"><h2 style="font-size:18px;font-weight:700" id="greeting">Hey Nellie!</h2><p style="color:var(--text-dim);font-size:13px" id="today-date"></p></div>
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-size:12px;color:var(--text-dim)">Level <span id="level-num">1</span> &mdash; <span id="level-title">Starter</span></div>
+        <div style="font-size:12px;font-weight:700;color:var(--yellow)" id="total-points">0 pts</div>
+      </div>
+      <div class="xp-bar-outer"><div class="xp-bar-fill" id="xp-bar" style="width:0%"></div><div class="xp-bar-text" id="xp-text">0 / 100 XP</div></div>
+    </div>
+    <button class="menu-item" onclick="showPage('medals');toggleMenu()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>Medals</button>
+    <button class="menu-item" onclick="showPage('history');toggleMenu()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>History</button>
+    <button class="menu-item" onclick="showPage('settings');toggleMenu()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</button>
+    <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:12px">
+      <button class="menu-item" onclick="toggleCoachMode();toggleMenu()" id="coach-toggle-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span id="coach-toggle-label">Coach Mode</span></button>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+
+<!-- ===== LOG (default) ===== -->
+<div class="page active" id="page-log">
+  <div id="new-messages-banner" style="display:none;cursor:pointer" onclick="showPage('messages')">
+    <div class="card" style="background:linear-gradient(135deg,var(--accent-glow),var(--yellow-glow));border-color:var(--accent)">
+      <div style="display:flex;align-items:center;gap:10px"><span style="font-size:24px">&#128140;</span><div><div style="font-size:14px;font-weight:600">New message from Dad!</div><div style="font-size:12px;color:var(--text-dim)">Tap to read</div></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Log Exercises &mdash; <span id="log-date-label"></span></div>
+    <div class="form-group"><input type="date" id="log-date" onchange="loadLogForDate()"></div>
+    <div id="exercise-inputs"></div>
+    <button class="btn btn-primary" style="margin-top:12px" onclick="saveLog()">Save Exercises</button>
+  </div>
+  <div class="card">
+    <div class="card-title">Today's Progress</div>
+    <div id="today-progress"></div>
+  </div>
+  <div class="card"><div class="card-title">Personal Bests</div><div id="personal-bests"></div></div>
+</div>
+
+<!-- ===== PROGRESS ===== -->
+<div class="page" id="page-progress">
+  <h2>Progress</h2>
+  <div class="card">
+    <div class="card-title">Streaks</div>
+    <div class="grid-2" id="streak-grid"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Exercise Trends (Last 14 Days)</div>
+    <canvas class="mini-chart" id="fitness-chart" style="height:200px"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title">Daily Completion Rate</div>
+    <canvas class="mini-chart" id="completion-chart" style="height:140px"></canvas>
+  </div>
+</div>
+
+<!-- ===== MESSAGES ===== -->
+<div class="page" id="page-messages">
+  <h2>Messages from Dad <span style="font-size:20px">&#128150;</span></h2>
+  <div id="messages-list"></div>
+</div>
+
+<!-- ===== MEDALS ===== -->
+<div class="page" id="page-medals">
+  <h2>Medals & Achievements</h2>
+  <div class="medal-grid" id="medal-grid"></div>
+</div>
+
+<!-- ===== HISTORY ===== -->
+<div class="page" id="page-history">
+  <h2>Exercise History</h2>
+  <div id="history-list"></div>
+</div>
+
+<!-- ===== SETTINGS ===== -->
+<div class="page" id="page-settings">
+  <h2>Settings</h2>
+  <div class="card">
+    <div class="card-title">Exercises</div>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px">Configure your exercise program. Set names and daily targets.</p>
+    <div id="exercise-config"></div>
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <button class="btn btn-secondary btn-sm" onclick="addExerciseConfig()" style="flex:1">+ Add Exercise</button>
+      <button class="btn btn-primary btn-sm" onclick="saveExerciseConfig()" style="flex:1">Save Exercises</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Google Sheets Sync</div>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px">Connect to Google Sheets for backup &amp; coach monitoring.</p>
+    <div class="form-group"><label class="form-label">Apps Script URL</label><input type="url" id="set-sync-url" placeholder="https://script.google.com/macros/s/.../exec"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="saveSyncSettings()" style="flex:1">Save Sync</button>
+      <button class="btn btn-secondary" onclick="fullSync()" style="flex:1">Sync All Now</button>
+    </div>
+    <div id="sync-status" style="font-size:12px;color:var(--text-dim);margin-top:8px;text-align:center"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Theme Colors</div>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px">Customize the app colors. Changes preview live.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group" style="margin:0"><label class="form-label">Background</label><input type="color" id="clr-bg" class="clr-pick" oninput="previewColors()"></div>
+      <div class="form-group" style="margin:0"><label class="form-label">Cards</label><input type="color" id="clr-surface" class="clr-pick" oninput="previewColors()"></div>
+      <div class="form-group" style="margin:0"><label class="form-label">Accent</label><input type="color" id="clr-accent" class="clr-pick" oninput="previewColors()"></div>
+      <div class="form-group" style="margin:0"><label class="form-label">Green</label><input type="color" id="clr-green" class="clr-pick" oninput="previewColors()"></div>
+      <div class="form-group" style="margin:0"><label class="form-label">Red</label><input type="color" id="clr-red" class="clr-pick" oninput="previewColors()"></div>
+      <div class="form-group" style="margin:0"><label class="form-label">Yellow</label><input type="color" id="clr-yellow" class="clr-pick" oninput="previewColors()"></div>
+      <div class="form-group" style="margin:0"><label class="form-label">Text</label><input type="color" id="clr-text" class="clr-pick" oninput="previewColors()"></div>
+    </div>
+    <div class="color-preview" id="color-preview">
+      <div id="cp-bg" style="padding:12px">
+        <div id="cp-card" style="border-radius:8px;padding:12px">
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <span id="cp-accent" style="padding:4px 10px;border-radius:4px;font-size:12px;font-weight:600">Accent</span>
+            <span id="cp-green" style="padding:4px 10px;border-radius:4px;font-size:12px;font-weight:600">Green</span>
+            <span id="cp-red" style="padding:4px 10px;border-radius:4px;font-size:12px;font-weight:600">Red</span>
+            <span id="cp-yellow" style="padding:4px 10px;border-radius:4px;font-size:12px;font-weight:600">Yellow</span>
+          </div>
+          <div id="cp-text" style="font-size:12px;margin-bottom:6px">Sample text preview</div>
+          <div style="display:flex;gap:4px;height:6px;border-radius:3px;overflow:hidden">
+            <div id="cp-bar1" style="flex:3;border-radius:3px"></div>
+            <div id="cp-bar2" style="flex:2;border-radius:3px"></div>
+            <div id="cp-bar3" style="flex:1;border-radius:3px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-primary" onclick="saveTheme()" style="flex:1">Save Theme</button>
+      <button class="btn btn-secondary" onclick="resetTheme()" style="flex:1">Reset Default</button>
+    </div>
+  </div>
+  <div class="card"><div class="card-title">Data</div><div style="display:flex;flex-direction:column;gap:8px"><button class="btn btn-secondary" onclick="exportCSV()">Export All Data (CSV)</button><button class="btn btn-danger" onclick="confirmClear()">Clear All Data</button></div></div>
+  <div style="text-align:center;margin-top:24px"><p style="font-size:12px;color:var(--text-dim)">P Fitness v1.0 &mdash; Nellie's Fitness Tracker</p></div>
+</div>
+
+<!-- ===== COACH MODE ===== -->
+<div class="page" id="page-coach">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px"><h2 style="margin:0">Coach Dashboard</h2><span class="coach-badge">COACH</span></div>
+  <div class="card">
+    <div class="card-title">Nellie's Progress &mdash; <span id="coach-date-label"></span></div>
+    <div class="form-group"><input type="date" id="coach-date" onchange="loadCoachDay()"></div>
+    <div id="coach-progress"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Weekly Overview</div>
+    <div id="coach-weekly"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Send Motivational Message</div>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px">Send Nellie a fun or inspirational message!</p>
+    <div style="margin-bottom:12px" id="preset-messages"></div>
+    <div class="form-group"><label class="form-label">Custom Message</label><textarea id="coach-msg" placeholder="You're doing amazing, Nellie! Keep it up!"></textarea></div>
+    <div class="form-group"><label class="form-label">Image URL (optional)</label><input type="url" id="coach-msg-img" placeholder="https://..."></div>
+    <button class="btn btn-primary" onclick="sendCoachMessage()">Send Message &#128140;</button>
+  </div>
+  <div class="card">
+    <div class="card-title">Sent Messages</div>
+    <div id="coach-sent-messages"></div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<!-- Bottom Navigation -->
+<div class="bottom-nav" id="bottom-nav">
+  <button class="nav-btn active" onclick="showPage('log')" id="nav-log">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    Log
+  </button>
+  <button class="nav-btn" onclick="showPage('progress')" id="nav-progress">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Progress
+  </button>
+  <button class="nav-btn" onclick="showPage('messages')" id="nav-messages">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    Messages
+  </button>
+</div>
+
+<!-- PIN Modal -->
+<div class="modal-overlay" id="pin-modal">
+  <div class="modal-content">
+    <div class="modal-title">Enter Coach PIN</div>
+    <div class="form-group"><input type="password" id="pin-input" placeholder="4-digit PIN" maxlength="6" inputmode="numeric"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-secondary" style="flex:1" onclick="closePinModal()">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="checkPin()">Enter</button>
+    </div>
+    <p id="pin-error" style="color:var(--red);font-size:13px;margin-top:8px;text-align:center;display:none">Wrong PIN. Try again.</p>
+    <p style="font-size:11px;color:var(--text-dim);margin-top:12px;text-align:center" id="pin-hint">Default PIN: 1234. Change in Coach Settings.</p>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="confirm-modal"><div class="modal-content"><div class="modal-title" id="confirm-title">Are you sure?</div><p style="color:var(--text-dim);margin-bottom:20px" id="confirm-msg"></p><div style="display:flex;gap:8px"><button class="btn btn-secondary" style="flex:1" onclick="closeModal('confirm-modal')">Cancel</button><button class="btn btn-danger" style="flex:1" id="confirm-action">Delete</button></div></div></div>
+
+<script>
+// ================================================================
+//  DATA LAYER
+// ================================================================
+function load(k,fb){try{const v=localStorage.getItem('nf_'+k);return v?JSON.parse(v):fb}catch{return fb}}
+function save(k,v){localStorage.setItem('nf_'+k,JSON.stringify(v))}
+
+function getExercises(){
+  return load('exercises',[
+    {key:'pushups',name:'Push-ups',icon:'&#128170;',target:20},
+    {key:'situps',name:'Sit-ups',icon:'&#129336;',target:20},
+    {key:'squats',name:'Squats',icon:'&#129461;',target:15},
+    {key:'jumpingJacks',name:'Jumping Jacks',icon:'&#11088;',target:25},
+    {key:'plankSec',name:'Plank (seconds)',icon:'&#129496;',target:30}
+  ]);
+}
+function getLogs(){return load('logs',{})}
+function getMessages(){return load('messages',[])}
+function getCoachPIN(){return load('coachPIN','1234')}
+function getSyncSettings(){return load('syncSettings',{url:''})}
+function getTheme(){return load('theme',null)}
+function getPoints(){return load('points',0)}
+
+function toEST(d){return new Date(d.toLocaleString('en-US',{timeZone:'America/New_York'}))}
+function dateStrEST(d){const e=toEST(d||new Date());return`${e.getFullYear()}-${String(e.getMonth()+1).padStart(2,'0')}-${String(e.getDate()).padStart(2,'0')}`}
+function todayStr(){return dateStrEST(new Date())}
+
+function getTotalReps(val){
+  if(Array.isArray(val))return val.reduce((s,v)=>s+v,0);
+  return typeof val==='number'?val:0;
+}
+
+// ================================================================
+//  LEVELS & POINTS
+// ================================================================
+const LEVELS=[
+  {level:1,title:'Starter',xp:0},{level:2,title:'Getting Going',xp:50},{level:3,title:'Warming Up',xp:120},
+  {level:4,title:'On Fire',xp:250},{level:5,title:'Strong',xp:400},{level:6,title:'Super Strong',xp:600},
+  {level:7,title:'Incredible',xp:850},{level:8,title:'Unstoppable',xp:1150},{level:9,title:'Champion',xp:1500},
+  {level:10,title:'Legend',xp:2000},{level:11,title:'Superstar',xp:2700},{level:12,title:'Ultimate',xp:3500}
+];
+function getLevel(xp){let l=LEVELS[0];for(const lv of LEVELS){if(xp>=lv.xp)l=lv;else break}return l}
+function getNextLevel(xp){for(const l of LEVELS){if(xp<l.xp)return l}return null}
+
+function calcDayPoints(date){
+  const logs=getLogs(),log=logs[date];
+  if(!log)return{pts:0,breakdown:[]};
+  const exercises=getExercises();
+  let pts=0;const bd=[];
+  // Base log points
+  pts+=10;bd.push('+10 Logged exercises');
+  // Per exercise that hit target
+  let metCount=0;
+  exercises.forEach(ex=>{
+    const total=getTotalReps(log[ex.key]);
+    if(total>0){pts+=5;bd.push(`+5 Did ${ex.name}`)}
+    if(total>=ex.target){metCount++;pts+=10;bd.push(`+10 Hit ${ex.name} target!`)}
+  });
+  if(metCount===exercises.length&&exercises.length>0){pts+=25;bd.push('+25 ALL targets met!')}
+  return{pts,breakdown:bd};
+}
+
+function getTotalPoints(){
+  const logs=getLogs();
+  let total=0;
+  Object.keys(logs).forEach(d=>{total+=calcDayPoints(d).pts});
+  total+=getMedalBonusPoints();
+  return total;
+}
+
+// ================================================================
+//  STREAKS
+// ================================================================
+function calcStreaks(){
+  const logs=getLogs();
+  const dates=Object.keys(logs).sort().reverse();
+  let current=0,best=0,counting=true;
+  const today=todayStr();
+  for(let i=0;i<400;i++){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const ds=dateStrEST(d);
+    if(logs[ds]){
+      if(counting)current++;
+      best=Math.max(best,counting?current:0);
+    } else {
+      if(i===0)continue; // today not logged yet is ok
+      if(counting){counting=false}
+    }
+  }
+  // Recalc best from all consecutive runs
+  let run=0;
+  const allDates=Object.keys(logs).sort();
+  for(let i=0;i<allDates.length;i++){
+    if(i===0){run=1}else{
+      const prev=new Date(allDates[i-1]+'T12:00:00'),curr=new Date(allDates[i]+'T12:00:00');
+      const diff=Math.round((curr-prev)/(1000*60*60*24));
+      run=diff===1?run+1:1;
+    }
+    best=Math.max(best,run);
+  }
+  return{current,best};
+}
+
+// ================================================================
+//  MEDALS
+// ================================================================
+function getMedals(){
+  const logs=getLogs(),exercises=getExercises(),medals=[];
+  const streaks=calcStreaks();
+  // Per-exercise medals
+  exercises.forEach(ex=>{
+    const best=getPersonalBest(ex.key);
+    const t=ex.target;
+    medals.push({id:ex.key+'-2x',name:ex.name+' 2x',icon:'&#127941;',desc:`${t*2} ${ex.key==='plankSec'?'sec':'reps'} in a session`,earned:best>=t*2,bonus:50});
+    medals.push({id:ex.key+'-3x',name:ex.name+' 3x',icon:'&#127942;',desc:`${t*3} ${ex.key==='plankSec'?'sec':'reps'} in a session`,earned:best>=t*3,bonus:100});
+  });
+  // Streak medals
+  medals.push({id:'streak-7',name:'Week Warrior',icon:'&#128293;',desc:'7-day log streak',earned:streaks.best>=7,bonus:75});
+  medals.push({id:'streak-14',name:'Two Week Champ',icon:'&#9889;',desc:'14-day log streak',earned:streaks.best>=14,bonus:150});
+  medals.push({id:'streak-30',name:'Monthly Master',icon:'&#128142;',desc:'30-day log streak',earned:streaks.best>=30,bonus:300});
+  // Session count medals
+  const sc=Object.keys(logs).length;
+  medals.push({id:'sessions-10',name:'Getting Started',icon:'&#127793;',desc:'10 training days',earned:sc>=10,bonus:50});
+  medals.push({id:'sessions-25',name:'Quarter Century',icon:'&#128170;',desc:'25 training days',earned:sc>=25,bonus:100});
+  medals.push({id:'sessions-50',name:'Fifty Strong',icon:'&#128640;',desc:'50 training days',earned:sc>=50,bonus:200});
+  return medals;
+}
+function getMedalBonusPoints(){return getMedals().filter(m=>m.earned).reduce((s,m)=>s+m.bonus,0)}
+function getPersonalBest(key){
+  const logs=getLogs();let best=0;
+  Object.values(logs).forEach(log=>{const t=getTotalReps(log[key]);if(t>best)best=t});
+  return best;
+}
+
+// ================================================================
+//  NAVIGATION
+// ================================================================
+let currentPage='log';
+let coachMode=false;
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const page=document.getElementById('page-'+id);
+  if(page)page.classList.add('active');
+  currentPage=id;
+  // Update nav
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const nav=document.getElementById('nav-'+id);
+  if(nav)nav.classList.add('active');
+  // Render page
+  if(id==='log')renderLogPage();
+  if(id==='progress')renderProgressPage();
+  if(id==='messages')renderMessages();
+  if(id==='medals')renderMedals();
+  if(id==='history')renderHistory();
+  if(id==='settings')renderSettings();
+  if(id==='coach')renderCoachPage();
+}
+
+function toggleMenu(){
+  const m=document.getElementById('menu-overlay');
+  m.classList.toggle('show');
+  updateMenuInfo();
+}
+
+// ================================================================
+//  COACH MODE
+// ================================================================
+function toggleCoachMode(){
+  if(!coachMode){
+    document.getElementById('pin-modal').classList.add('show');
+    document.getElementById('pin-input').value='';
+    document.getElementById('pin-error').style.display='none';
+    setTimeout(()=>document.getElementById('pin-input').focus(),100);
+  } else {
+    coachMode=false;
+    document.getElementById('coach-toggle-label').textContent='Coach Mode';
+    showPage('log');
+    updateBottomNav();
+    toast('Coach mode off');
+  }
+}
+
+function checkPin(){
+  const pin=document.getElementById('pin-input').value;
+  if(pin===getCoachPIN()){
+    coachMode=true;
+    closePinModal();
+    document.getElementById('coach-toggle-label').textContent='Exit Coach Mode';
+    updateBottomNav();
+    showPage('coach');
+    toast('Coach mode activated');
+  } else {
+    document.getElementById('pin-error').style.display='block';
+  }
+}
+
+function closePinModal(){
+  document.getElementById('pin-modal').classList.remove('show');
+}
+
+function updateBottomNav(){
+  const nav=document.getElementById('bottom-nav');
+  if(coachMode){
+    nav.innerHTML=`
+      <button class="nav-btn active" onclick="showPage('coach')" id="nav-coach">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Dashboard
+      </button>
+      <button class="nav-btn" onclick="showPage('log')" id="nav-log">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Her Log
+      </button>
+      <button class="nav-btn" onclick="showPage('messages')" id="nav-messages">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Messages
+      </button>`;
+  } else {
+    nav.innerHTML=`
+      <button class="nav-btn active" onclick="showPage('log')" id="nav-log">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Log
+      </button>
+      <button class="nav-btn" onclick="showPage('progress')" id="nav-progress">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Progress
+      </button>
+      <button class="nav-btn" onclick="showPage('messages')" id="nav-messages">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Messages
+      </button>`;
+  }
+}
+
+// ================================================================
+//  LOG PAGE
+// ================================================================
+let tempSets={}; // {exerciseKey: [reps, reps, ...]}
+
+function renderLogPage(){
+  const exercises=getExercises();
+  const dateEl=document.getElementById('log-date');
+  if(!dateEl.value)dateEl.value=todayStr();
+  document.getElementById('log-date-label').textContent=formatDateLabel(dateEl.value);
+  loadLogForDate();
+  renderTodayProgress();
+  renderPersonalBests();
+  checkNewMessages();
+}
+
+function loadLogForDate(){
+  const date=document.getElementById('log-date').value;
+  document.getElementById('log-date-label').textContent=formatDateLabel(date);
+  const logs=getLogs();
+  const existing=logs[date]||{};
+  const exercises=getExercises();
+  tempSets={};
+
+  let html='';
+  exercises.forEach(ex=>{
+    const saved=existing[ex.key];
+    const sets=saved?( Array.isArray(saved)?[...saved]:(typeof saved==='number'&&saved>0?[saved]:[]) ):[];
+    tempSets[ex.key]=sets;
+    const total=sets.reduce((s,v)=>s+v,0);
+    const pct=ex.target>0?Math.min(100,Math.round(total/ex.target*100)):0;
+    const color=pct>=100?'green':pct>=50?'accent':'yellow';
+
+    html+=`<div class="exercise-block">
+      <div class="exercise-header">
+        <div><span class="exercise-icon">${ex.icon}</span><span class="exercise-name">${ex.name}</span></div>
+        <span class="exercise-target">Target: ${ex.target}${ex.key.includes('Sec')?' sec':''}</span>
+      </div>
+      <div class="exercise-progress">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+          <span style="font-size:13px;font-weight:700;color:var(--${color})">${total}/${ex.target}</span>
+          <span style="font-size:12px;color:var(--text-dim)">${pct}%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill ${color}" style="width:${pct}%"></div></div>
+      </div>
+      <div class="set-log" id="sets-${ex.key}">${sets.map(s=>`<span class="set-chip">${s}</span>`).join('')}${total>0?`<span class="set-total">= ${total}</span>`:''}</div>
+      <div class="add-set-row">
+        <input type="number" class="add-set-input" id="input-${ex.key}" placeholder="reps" inputmode="numeric" onkeydown="if(event.key==='Enter')addSet('${ex.key}')">
+        <button class="add-set-btn" onclick="addSet('${ex.key}')">+ Set</button>
+        <button class="add-set-btn" style="background:var(--red);font-size:11px" onclick="undoSet('${ex.key}')">Undo</button>
+      </div>
+    </div>`;
+  });
+  document.getElementById('exercise-inputs').innerHTML=html;
+}
+
+function addSet(key){
+  const input=document.getElementById('input-'+key);
+  const val=parseInt(input.value);
+  if(!val||val<=0)return;
+  if(!tempSets[key])tempSets[key]=[];
+  tempSets[key].push(val);
+  input.value='';
+  updateSetDisplay(key);
+}
+
+function undoSet(key){
+  if(!tempSets[key]||tempSets[key].length===0)return;
+  tempSets[key].pop();
+  updateSetDisplay(key);
+}
+
+function updateSetDisplay(key){
+  const sets=tempSets[key]||[];
+  const total=sets.reduce((s,v)=>s+v,0);
+  const ex=getExercises().find(e=>e.key===key);
+  const pct=ex&&ex.target>0?Math.min(100,Math.round(total/ex.target*100)):0;
+  const color=pct>=100?'green':pct>=50?'accent':'yellow';
+
+  const container=document.getElementById('sets-'+key);
+  container.innerHTML=sets.map(s=>`<span class="set-chip">${s}</span>`).join('')+(total>0?`<span class="set-total">= ${total}</span>`:'');
+
+  // Update progress bar in parent
+  const block=container.closest('.exercise-block');
+  if(block){
+    const progDiv=block.querySelector('.exercise-progress');
+    if(progDiv&&ex){
+      progDiv.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+        <span style="font-size:13px;font-weight:700;color:var(--${color})">${total}/${ex.target}</span>
+        <span style="font-size:12px;color:var(--text-dim)">${pct}%</span>
+      </div><div class="progress-bar"><div class="progress-fill ${color}" style="width:${pct}%"></div></div>`;
+    }
+  }
+}
+
+function saveLog(){
+  const date=document.getElementById('log-date').value;
+  if(!date)return;
+  const logs=getLogs();
+  const entry={ts:new Date().toISOString()};
+  const exercises=getExercises();
+  exercises.forEach(ex=>{
+    if(tempSets[ex.key]&&tempSets[ex.key].length>0){
+      entry[ex.key]=tempSets[ex.key];
+    }
+  });
+  // Calculate points before save to show popup
+  const oldPts=calcDayPoints(date).pts;
+  logs[date]=entry;
+  save('logs',logs);
+
+  const newDayPts=calcDayPoints(date);
+  const gained=newDayPts.pts-oldPts;
+
+  // Sync to sheet
+  syncToSheet('exercises',{date,exercises:entry});
+
+  toast('Exercises saved!');
+  if(gained>0)showPointsPopup(gained,newDayPts.breakdown);
+  // Check if all targets met for confetti
+  const allMet=exercises.every(ex=>{
+    const total=getTotalReps(entry[ex.key]);
+    return total>=ex.target;
+  });
+  if(allMet&&exercises.length>0)fireConfetti();
+
+  renderTodayProgress();
+  renderPersonalBests();
+  updateStatusBar();
+}
+
+function renderTodayProgress(){
+  const exercises=getExercises();
+  const logs=getLogs();
+  const today=logs[todayStr()]||{};
+  let html='';
+  if(exercises.length===0){html='<p style="color:var(--text-dim);font-size:13px">No exercises configured yet. Go to Settings to add some!</p>';}
+  else{
+    let totalDone=0,totalTarget=0;
+    exercises.forEach(ex=>{
+      const done=getTotalReps(today[ex.key]);
+      totalDone+=Math.min(done,ex.target);
+      totalTarget+=ex.target;
+    });
+    const overallPct=totalTarget>0?Math.round(totalDone/totalTarget*100):0;
+    html+=`<div style="text-align:center;margin-bottom:12px"><div style="font-size:48px;font-weight:900;color:var(--${overallPct>=100?'green':overallPct>=50?'accent':'yellow'})">${overallPct}%</div><div style="font-size:13px;color:var(--text-dim)">Today's overall progress</div></div>`;
+    exercises.forEach(ex=>{
+      const done=getTotalReps(today[ex.key]);
+      const pct=ex.target>0?Math.min(100,Math.round(done/ex.target*100)):0;
+      const color=pct>=100?'green':pct>=50?'accent':'yellow';
+      html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="width:20px;text-align:center">${ex.icon}</span><span style="flex:1;font-size:13px">${ex.name}</span><span style="font-size:12px;font-weight:600;color:var(--${color})">${done}/${ex.target}</span></div><div class="progress-bar" style="margin-bottom:8px"><div class="progress-fill ${color}" style="width:${pct}%"></div></div>`;
+    });
+  }
+  document.getElementById('today-progress').innerHTML=html;
+}
+
+function renderPersonalBests(){
+  const exercises=getExercises();
+  let html='';
+  exercises.forEach(ex=>{
+    const best=getPersonalBest(ex.key);
+    const unit=ex.key.includes('Sec')?'sec':'reps';
+    html+=`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="font-size:14px">${ex.icon} ${ex.name}</span><span style="font-size:14px;font-weight:700;color:var(--accent)">${best} ${unit}</span></div>`;
+  });
+  if(!html)html='<p style="color:var(--text-dim);font-size:13px">No exercises logged yet.</p>';
+  document.getElementById('personal-bests').innerHTML=html;
+}
+
+// ================================================================
+//  PROGRESS PAGE
+// ================================================================
+function renderProgressPage(){
+  const streaks=calcStreaks();
+  document.getElementById('streak-grid').innerHTML=`
+    <div class="streak-display"><div><div class="streak-number" style="color:var(--green)">${streaks.current}</div><div class="streak-label">Current streak</div></div></div>
+    <div class="streak-display"><div><div class="streak-number" style="color:var(--accent)">${streaks.best}</div><div class="streak-label">Best streak</div></div></div>`;
+  renderFitnessChart();
+  renderCompletionChart();
+}
+
+function renderFitnessChart(){
+  const canvas=document.getElementById('fitness-chart');
+  const ctx=canvas.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  canvas.width=canvas.offsetWidth*dpr;canvas.height=canvas.offsetHeight*dpr;
+  ctx.scale(dpr,dpr);
+  const W=canvas.offsetWidth,H=canvas.offsetHeight;
+  ctx.clearRect(0,0,W,H);
+
+  const exercises=getExercises();
+  const logs=getLogs();
+  const days=[];
+  for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(dateStrEST(d))}
+
+  if(exercises.length===0)return;
+  const colors=['#e056a0','#5db835','#f0c040','#60a0ff','#f27068','#a070ff','#f0a030'];
+
+  // Find max for scale
+  let maxVal=10;
+  days.forEach(d=>{
+    const log=logs[d]||{};
+    exercises.forEach(ex=>{const t=getTotalReps(log[ex.key]);if(t>maxVal)maxVal=t});
+  });
+
+  const pad={t:20,b:30,l:35,r:10};
+  const chartW=W-pad.l-pad.r,chartH=H-pad.t-pad.b;
+
+  // Grid
+  ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--border').trim()||'#443090';
+  ctx.lineWidth=0.5;
+  for(let i=0;i<=4;i++){
+    const y=pad.t+chartH*(1-i/4);
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--text-dim').trim()||'#a099c0';
+    ctx.font='10px sans-serif';ctx.textAlign='right';
+    ctx.fillText(Math.round(maxVal*i/4),pad.l-4,y+3);
+  }
+
+  // Lines per exercise
+  exercises.forEach((ex,ei)=>{
+    ctx.strokeStyle=colors[ei%colors.length];
+    ctx.lineWidth=2;ctx.beginPath();
+    days.forEach((d,di)=>{
+      const log=logs[d]||{};
+      const val=getTotalReps(log[ex.key]);
+      const x=pad.l+di/(days.length-1)*chartW;
+      const y=pad.t+chartH*(1-val/maxVal);
+      di===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+  });
+
+  // Legend
+  const legendY=H-6;
+  let lx=pad.l;
+  exercises.forEach((ex,ei)=>{
+    ctx.fillStyle=colors[ei%colors.length];
+    ctx.fillRect(lx,legendY-6,8,8);
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--text-dim').trim()||'#a099c0';
+    ctx.font='9px sans-serif';ctx.textAlign='left';
+    ctx.fillText(ex.name,lx+10,legendY+1);
+    lx+=ctx.measureText(ex.name).width+20;
+  });
+}
+
+function renderCompletionChart(){
+  const canvas=document.getElementById('completion-chart');
+  const ctx=canvas.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  canvas.width=canvas.offsetWidth*dpr;canvas.height=canvas.offsetHeight*dpr;
+  ctx.scale(dpr,dpr);
+  const W=canvas.offsetWidth,H=canvas.offsetHeight;
+  ctx.clearRect(0,0,W,H);
+
+  const exercises=getExercises();
+  const logs=getLogs();
+  const days=[];
+  for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(dateStrEST(d))}
+
+  const pad={t:10,b:20,l:10,r:10};
+  const barW=(W-pad.l-pad.r)/days.length-2;
+
+  days.forEach((d,i)=>{
+    const log=logs[d]||{};
+    let met=0;
+    exercises.forEach(ex=>{if(getTotalReps(log[ex.key])>=ex.target)met++});
+    const pct=exercises.length>0?met/exercises.length:0;
+    const x=pad.l+i*((W-pad.l-pad.r)/days.length)+1;
+    const barH=(H-pad.t-pad.b)*pct;
+    const y=H-pad.b-barH;
+
+    const green=getComputedStyle(document.documentElement).getPropertyValue('--green').trim()||'#5db835';
+    const accent=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#e056a0';
+    const border=getComputedStyle(document.documentElement).getPropertyValue('--border').trim()||'#443090';
+    ctx.fillStyle=pct>=1?green:pct>0?accent:border;
+    ctx.beginPath();
+    ctx.roundRect(x,y,barW,barH,2);
+    ctx.fill();
+
+    // Day label
+    const dt=new Date(d+'T12:00:00');
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--text-dim').trim()||'#a099c0';
+    ctx.font='9px sans-serif';ctx.textAlign='center';
+    ctx.fillText(dt.getDate(),x+barW/2,H-4);
+  });
+}
+
+// ================================================================
+//  MESSAGES
+// ================================================================
+function renderMessages(){
+  const msgs=getMessages();
+  const container=document.getElementById('messages-list');
+  if(msgs.length===0){
+    container.innerHTML='<div class="msg-empty"><div style="font-size:48px;margin-bottom:12px">&#128236;</div><p>No messages yet!<br>Your coach will send you motivational messages here.</p></div>';
+    return;
+  }
+  // Show newest first
+  let html='';
+  [...msgs].reverse().forEach(m=>{
+    html+=`<div class="msg-card">${m.img?`<img class="msg-img" src="${m.img}" onerror="this.style.display='none'" alt="motivational image">`:''}<div class="msg-text">${escapeHTML(m.text)}</div><div class="msg-from">${m.from||'Dad'} &mdash; ${formatDateLabel(m.date)} ${m.time||''}</div></div>`;
+  });
+  container.innerHTML=html;
+  // Mark as read
+  save('lastMsgRead',msgs.length);
+}
+
+function checkNewMessages(){
+  const msgs=getMessages();
+  const lastRead=load('lastMsgRead',0);
+  const banner=document.getElementById('new-messages-banner');
+  if(msgs.length>lastRead){
+    banner.style.display='block';
+  } else {
+    banner.style.display='none';
+  }
+}
+
+// ================================================================
+//  MEDALS PAGE
+// ================================================================
+function renderMedals(){
+  const medals=getMedals();
+  let html='';
+  medals.forEach(m=>{
+    html+=`<div class="medal-card ${m.earned?'earned':'locked'}"><div class="medal-icon">${m.icon}</div><div class="medal-name">${m.name}</div><div class="medal-desc">${m.desc}</div>${m.earned?`<div style="font-size:10px;color:var(--yellow);margin-top:4px">+${m.bonus} pts</div>`:''}</div>`;
+  });
+  document.getElementById('medal-grid').innerHTML=html;
+}
+
+// ================================================================
+//  HISTORY PAGE
+// ================================================================
+function renderHistory(){
+  const logs=getLogs();
+  const exercises=getExercises();
+  const dates=Object.keys(logs).sort().reverse();
+  let html='';
+  if(dates.length===0){html='<p style="color:var(--text-dim)">No exercise history yet.</p>';}
+  dates.forEach(d=>{
+    const log=logs[d];
+    let details=[];
+    exercises.forEach(ex=>{
+      const total=getTotalReps(log[ex.key]);
+      if(total>0)details.push(`${ex.icon} ${ex.name}: ${total}`);
+    });
+    html+=`<div class="history-item"><div class="history-date">${formatDateLabel(d)}</div><div class="history-exercises">${details.join(' &middot; ')||'No exercises'}</div></div>`;
+  });
+  document.getElementById('history-list').innerHTML=html;
+}
+
+// ================================================================
+//  SETTINGS PAGE
+// ================================================================
+function renderSettings(){
+  renderExerciseConfig();
+  loadSyncSettings();
+  loadThemeSettings();
+}
+
+function renderExerciseConfig(){
+  const exercises=getExercises();
+  let html='';
+  exercises.forEach((ex,i)=>{
+    html+=`<div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px;margin-bottom:8px" id="exconfig-${i}">
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <div style="flex:1"><label class="form-label">Name</label><input type="text" id="exname-${i}" value="${escapeHTML(ex.name)}" style="padding:10px"></div>
+        <div style="width:60px"><label class="form-label">Icon</label><input type="text" id="exicon-${i}" value="${ex.icon}" style="padding:10px;text-align:center"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:end">
+        <div style="flex:1"><label class="form-label">Daily Target</label><input type="number" id="extarget-${i}" value="${ex.target}" inputmode="numeric" style="padding:10px"></div>
+        <div style="flex:1"><label class="form-label">Key</label><input type="text" id="exkey-${i}" value="${ex.key}" style="padding:10px;font-size:12px" ${i<exercises.length?'':''}></div>
+        <button class="btn btn-danger btn-sm" onclick="removeExerciseConfig(${i})" style="margin-bottom:0;height:42px">&#10005;</button>
+      </div>
+    </div>`;
+  });
+  document.getElementById('exercise-config').innerHTML=html;
+}
+
+function addExerciseConfig(){
+  const exercises=getExercises();
+  const num=exercises.length+1;
+  exercises.push({key:'exercise'+num,name:'Exercise '+num,icon:'&#127947;',target:10});
+  save('exercises',exercises);
+  renderExerciseConfig();
+}
+
+function removeExerciseConfig(idx){
+  const exercises=getExercises();
+  exercises.splice(idx,1);
+  save('exercises',exercises);
+  renderExerciseConfig();
+}
+
+function saveExerciseConfig(){
+  const exercises=getExercises();
+  const updated=[];
+  for(let i=0;i<exercises.length;i++){
+    const name=document.getElementById('exname-'+i)?.value.trim();
+    const icon=document.getElementById('exicon-'+i)?.value.trim()||'&#127947;';
+    const target=parseInt(document.getElementById('extarget-'+i)?.value)||10;
+    const key=document.getElementById('exkey-'+i)?.value.trim().replace(/\s+/g,'')||('ex'+i);
+    if(name)updated.push({key,name,icon,target});
+  }
+  save('exercises',updated);
+  toast('Exercises saved!');
+  syncToSheet('config',{exercises:updated});
+}
+
+function loadSyncSettings(){
+  const ss=getSyncSettings();
+  document.getElementById('set-sync-url').value=ss.url||'';
+}
+
+function saveSyncSettings(){
+  const url=document.getElementById('set-sync-url').value.trim();
+  save('syncSettings',{url});
+  toast('Sync settings saved!');
+}
+
+// ================================================================
+//  THEME
+// ================================================================
+const DEFAULT_THEME={bg:'#1a1040',surface:'#261858',accent:'#e056a0',green:'#5db835',red:'#f27068',yellow:'#f0c040',text:'#f0eef8'};
+
+function loadThemeSettings(){
+  const theme=getTheme()||DEFAULT_THEME;
+  document.getElementById('clr-bg').value=theme.bg;
+  document.getElementById('clr-surface').value=theme.surface;
+  document.getElementById('clr-accent').value=theme.accent;
+  document.getElementById('clr-green').value=theme.green;
+  document.getElementById('clr-red').value=theme.red;
+  document.getElementById('clr-yellow').value=theme.yellow;
+  document.getElementById('clr-text').value=theme.text;
+  previewColors();
+}
+
+function previewColors(){
+  const bg=document.getElementById('clr-bg').value;
+  const surface=document.getElementById('clr-surface').value;
+  const accent=document.getElementById('clr-accent').value;
+  const green=document.getElementById('clr-green').value;
+  const red=document.getElementById('clr-red').value;
+  const yellow=document.getElementById('clr-yellow').value;
+  const text=document.getElementById('clr-text').value;
+
+  document.getElementById('cp-bg').style.background=bg;
+  document.getElementById('cp-card').style.background=surface;
+  document.getElementById('cp-accent').style.background=accent+'40';document.getElementById('cp-accent').style.color=accent;
+  document.getElementById('cp-green').style.background=green+'40';document.getElementById('cp-green').style.color=green;
+  document.getElementById('cp-red').style.background=red+'40';document.getElementById('cp-red').style.color=red;
+  document.getElementById('cp-yellow').style.background=yellow+'40';document.getElementById('cp-yellow').style.color=yellow;
+  document.getElementById('cp-text').style.color=text;
+  document.getElementById('cp-bar1').style.background=accent;
+  document.getElementById('cp-bar2').style.background=green;
+  document.getElementById('cp-bar3').style.background=yellow;
+}
+
+function applyTheme(theme){
+  if(!theme)return;
+  const r=document.documentElement.style;
+  r.setProperty('--bg',theme.bg);r.setProperty('--surface',theme.surface);
+  const s2=adjustColor(theme.surface,15);r.setProperty('--surface2',s2);
+  const bdr=adjustColor(theme.surface,30);r.setProperty('--border',bdr);
+  r.setProperty('--accent',theme.accent);r.setProperty('--accent-glow',theme.accent+'40');
+  r.setProperty('--green',theme.green);r.setProperty('--green-glow',theme.green+'40');
+  r.setProperty('--red',theme.red);r.setProperty('--red-glow',theme.red+'40');
+  r.setProperty('--yellow',theme.yellow);r.setProperty('--yellow-glow',theme.yellow+'40');
+  r.setProperty('--text',theme.text);
+  const dim=adjustColor(theme.text,-40);r.setProperty('--text-dim',dim);
+  document.querySelector('meta[name="theme-color"]').content=theme.bg;
+}
+
+function adjustColor(hex,amount){
+  let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  r=Math.min(255,Math.max(0,r+amount));g=Math.min(255,Math.max(0,g+amount));b=Math.min(255,Math.max(0,b+amount));
+  return '#'+[r,g,b].map(c=>c.toString(16).padStart(2,'0')).join('');
+}
+
+function saveTheme(){
+  const theme={
+    bg:document.getElementById('clr-bg').value,surface:document.getElementById('clr-surface').value,
+    accent:document.getElementById('clr-accent').value,green:document.getElementById('clr-green').value,
+    red:document.getElementById('clr-red').value,yellow:document.getElementById('clr-yellow').value,
+    text:document.getElementById('clr-text').value
+  };
+  save('theme',theme);
+  applyTheme(theme);
+  toast('Theme saved!');
+}
+
+function resetTheme(){
+  save('theme',null);
+  applyTheme(DEFAULT_THEME);
+  loadThemeSettings();
+  toast('Theme reset to default');
+}
+
+// ================================================================
+//  COACH PAGE
+// ================================================================
+function renderCoachPage(){
+  const dateEl=document.getElementById('coach-date');
+  if(!dateEl.value)dateEl.value=todayStr();
+  document.getElementById('coach-date-label').textContent=formatDateLabel(dateEl.value);
+  loadCoachDay();
+  renderCoachWeekly();
+  renderPresetMessages();
+  renderSentMessages();
+}
+
+function loadCoachDay(){
+  const date=document.getElementById('coach-date').value;
+  document.getElementById('coach-date-label').textContent=formatDateLabel(date);
+  const logs=getLogs();
+  const log=logs[date]||{};
+  const exercises=getExercises();
+
+  let html='';
+  if(exercises.length===0){html='<p style="color:var(--text-dim)">No exercises configured.</p>';}
+  else{
+    let totalDone=0,totalTarget=0;
+    exercises.forEach(ex=>{
+      const done=getTotalReps(log[ex.key]);
+      totalDone+=Math.min(done,ex.target);
+      totalTarget+=ex.target;
+      const pct=ex.target>0?Math.min(100,Math.round(done/ex.target*100)):0;
+      const color=pct>=100?'green':pct>=50?'accent':'red';
+      const sets=log[ex.key];
+      const setsStr=Array.isArray(sets)?sets.join(' + '):(typeof sets==='number'?sets:'—');
+      html+=`<div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between"><span>${ex.icon} ${ex.name}</span><span style="font-weight:700;color:var(--${color})">${done}/${ex.target} (${pct}%)</span></div>
+        <div class="progress-bar"><div class="progress-fill ${color}" style="width:${pct}%"></div></div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:2px">Sets: ${setsStr}</div>
+      </div>`;
+    });
+    const overallPct=totalTarget>0?Math.round(totalDone/totalTarget*100):0;
+    html=`<div style="text-align:center;margin-bottom:12px"><span style="font-size:32px;font-weight:900;color:var(--${overallPct>=100?'green':overallPct>=50?'accent':'red'})">${overallPct}%</span><span style="font-size:14px;color:var(--text-dim);margin-left:8px">overall</span></div>`+html;
+  }
+  document.getElementById('coach-progress').innerHTML=html;
+}
+
+function renderCoachWeekly(){
+  const logs=getLogs();
+  const exercises=getExercises();
+  let html='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
+  html+='<tr><th style="text-align:left;padding:6px;color:var(--text-dim)">Day</th>';
+  exercises.forEach(ex=>{html+=`<th style="padding:6px;text-align:center">${ex.icon}</th>`});
+  html+='<th style="padding:6px;text-align:center">%</th></tr>';
+
+  for(let i=6;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const ds=dateStrEST(d);
+    const log=logs[ds]||{};
+    const isToday=ds===todayStr();
+    html+=`<tr style="${isToday?'background:var(--accent-glow)':''}">`;
+    html+=`<td style="padding:6px;font-weight:${isToday?'700':'400'}">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]}</td>`;
+    let met=0;
+    exercises.forEach(ex=>{
+      const done=getTotalReps(log[ex.key]);
+      const hit=done>=ex.target;
+      if(hit)met++;
+      html+=`<td style="padding:6px;text-align:center;color:var(--${done===0?'text-dim':hit?'green':'orange'})">${done||'—'}</td>`;
+    });
+    const pct=exercises.length>0?Math.round(met/exercises.length*100):0;
+    html+=`<td style="padding:6px;text-align:center;font-weight:700;color:var(--${pct>=100?'green':pct>0?'accent':'text-dim'})">${pct}%</td></tr>`;
+  }
+  html+='</table></div>';
+  document.getElementById('coach-weekly').innerHTML=html;
+}
+
+const PRESET_MSGS=[
+  "You're doing amazing, Nellie! Keep pushing!",
+  "Every rep makes you stronger! Go get 'em!",
+  "I'm so proud of you! You've got this!",
+  "Champions aren't born — they're made. And you're making it happen!",
+  "Just a little more to go! You're almost there!",
+  "Consistency is the secret. And you're nailing it!",
+  "Your hard work is paying off. I can see the difference!",
+  "Believe in yourself — I believe in you!"
+];
+
+function renderPresetMessages(){
+  let html='<p style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Quick presets:</p>';
+  PRESET_MSGS.forEach(m=>{
+    html+=`<span class="preset-chip" onclick="document.getElementById('coach-msg').value=this.textContent">${m}</span>`;
+  });
+  document.getElementById('preset-messages').innerHTML=html;
+}
+
+function sendCoachMessage(){
+  const text=document.getElementById('coach-msg').value.trim();
+  if(!text){toast('Write a message first!');return}
+  const img=document.getElementById('coach-msg-img').value.trim();
+  const msgs=getMessages();
+  const now=new Date();
+  const msg={
+    text,
+    img:img||null,
+    from:'Dad',
+    date:todayStr(),
+    time:now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})
+  };
+  msgs.push(msg);
+  save('messages',msgs);
+  // Sync to sheet
+  syncToSheet('message',msg);
+  document.getElementById('coach-msg').value='';
+  document.getElementById('coach-msg-img').value='';
+  toast('Message sent!');
+  renderSentMessages();
+}
+
+function renderSentMessages(){
+  const msgs=getMessages();
+  if(msgs.length===0){document.getElementById('coach-sent-messages').innerHTML='<p style="color:var(--text-dim);font-size:13px">No messages sent yet.</p>';return}
+  let html='';
+  [...msgs].reverse().slice(0,10).forEach(m=>{
+    html+=`<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><div>${escapeHTML(m.text)}</div><div style="font-size:11px;color:var(--text-dim);margin-top:2px">${m.date} ${m.time||''}</div></div>`;
+  });
+  document.getElementById('coach-sent-messages').innerHTML=html;
+}
+
+// ================================================================
+//  GOOGLE SHEETS SYNC
+// ================================================================
+function syncToSheet(type,payload){
+  const ss=getSyncSettings();
+  if(!ss.url)return;
+  const body=JSON.stringify({type,date:payload.date||todayStr(),payload});
+  fetch(ss.url,{method:'POST',body,mode:'no-cors'}).then(()=>{
+    updateSyncStatus('Synced '+type+' — '+new Date().toLocaleTimeString());
+  }).catch(err=>{
+    updateSyncStatus('Sync error: '+err.message);
+  });
+}
+
+function fullSync(){
+  const ss=getSyncSettings();
+  if(!ss.url){toast('Set your Apps Script URL first');return}
+  updateSyncStatus('Syncing all data...');
+  const body=JSON.stringify({type:'full',logs:getLogs(),messages:getMessages(),config:getExercises()});
+  fetch(ss.url,{method:'POST',body,mode:'no-cors'}).then(()=>{
+    updateSyncStatus('Full sync complete — '+new Date().toLocaleTimeString());
+    toast('All data synced!');
+  }).catch(err=>{
+    updateSyncStatus('Sync error: '+err.message);
+    toast('Sync failed — check URL');
+  });
+}
+
+function updateSyncStatus(msg){
+  const el=document.getElementById('sync-status');
+  if(el)el.textContent=msg;
+}
+
+// Pull messages from sheet (called on load and periodically)
+function pullMessages(){
+  const ss=getSyncSettings();
+  if(!ss.url)return;
+  fetch(ss.url+'?action=getMessages&t='+Date.now()).then(r=>r.json()).then(data=>{
+    if(data&&data.messages&&Array.isArray(data.messages)){
+      const existing=getMessages();
+      // Merge: add any messages not already present (by text+date match)
+      let added=0;
+      data.messages.forEach(m=>{
+        const exists=existing.some(e=>e.text===m.text&&e.date===m.date&&e.time===m.time);
+        if(!exists){existing.push(m);added++}
+      });
+      if(added>0){save('messages',existing);checkNewMessages()}
+    }
+  }).catch(()=>{});
+}
+
+// ================================================================
+//  UTILITIES
+// ================================================================
+function formatDateLabel(dateStr){
+  if(!dateStr)return '';
+  const d=new Date(dateStr+'T12:00:00');
+  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+}
+
+function escapeHTML(str){
+  const div=document.createElement('div');div.textContent=str;return div.innerHTML;
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+function showPointsPopup(pts,breakdown){
+  document.getElementById('popup-points').textContent='+'+pts;
+  document.getElementById('popup-breakdown').innerHTML=breakdown.map(b=>`<div style="font-size:12px">${b}</div>`).join('');
+  const popup=document.getElementById('points-popup');
+  popup.classList.add('show');
+  setTimeout(()=>popup.classList.remove('show'),3000);
+}
+
+function closeModal(id){document.getElementById(id).classList.remove('show')}
+
+function confirmClear(){
+  document.getElementById('confirm-title').textContent='Clear All Data?';
+  document.getElementById('confirm-msg').textContent='This will delete all exercise logs, messages, and settings. This cannot be undone.';
+  document.getElementById('confirm-action').textContent='Clear Everything';
+  document.getElementById('confirm-action').onclick=()=>{
+    ['logs','messages','exercises','theme','syncSettings','coachPIN','points','lastMsgRead'].forEach(k=>localStorage.removeItem('nf_'+k));
+    closeModal('confirm-modal');
+    toast('All data cleared');
+    location.reload();
+  };
+  document.getElementById('confirm-modal').classList.add('show');
+}
+
+function exportCSV(){
+  const logs=getLogs();
+  const exercises=getExercises();
+  let csv='Date,'+exercises.map(e=>e.name).join(',')+'\n';
+  Object.keys(logs).sort().forEach(d=>{
+    const log=logs[d];
+    csv+=d+','+exercises.map(e=>getTotalReps(log[e.key])).join(',')+'\n';
+  });
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='pfitness-export.csv';a.click();
+}
+
+// ================================================================
+//  CONFETTI
+// ================================================================
+function fireConfetti(){
+  const canvas=document.getElementById('confetti-canvas');
+  const ctx=canvas.getContext('2d');
+  canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+  const particles=[];
+  const colors=['#e056a0','#5db835','#f0c040','#60a0ff','#f27068','#a070ff','#f0a030','#ff69b4'];
+  for(let i=0;i<120;i++){
+    particles.push({
+      x:canvas.width/2+(Math.random()-.5)*100,y:canvas.height/2,
+      vx:(Math.random()-.5)*12,vy:-Math.random()*15-5,
+      size:Math.random()*8+3,color:colors[Math.floor(Math.random()*colors.length)],
+      rotation:Math.random()*360,rotSpeed:(Math.random()-.5)*10,
+      gravity:.3,life:1
+    });
+  }
+  function animate(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    let alive=0;
+    particles.forEach(p=>{
+      if(p.life<=0)return;
+      p.x+=p.vx;p.y+=p.vy;p.vy+=p.gravity;p.rotation+=p.rotSpeed;p.life-=.012;
+      if(p.life<=0)return;
+      alive++;
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rotation*Math.PI/180);
+      ctx.fillStyle=p.color;ctx.globalAlpha=Math.min(1,p.life*2);
+      ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*0.6);
+      ctx.restore();
+    });
+    if(alive>0)requestAnimationFrame(animate);
+    else ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+  animate();
+}
+
+// ================================================================
+//  STATUS BAR
+// ================================================================
+function updateStatusBar(){
+  const totalPts=getTotalPoints();
+  const level=getLevel(totalPts);
+  const next=getNextLevel(totalPts);
+  const streaks=calcStreaks();
+
+  document.getElementById('status-streak').textContent=streaks.current+'-day streak';
+  document.getElementById('status-level').textContent=level.level;
+  document.getElementById('status-pts').textContent=totalPts+' pts';
+}
+
+function updateMenuInfo(){
+  const totalPts=getTotalPoints();
+  const level=getLevel(totalPts);
+  const next=getNextLevel(totalPts);
+  document.getElementById('level-num').textContent=level.level;
+  document.getElementById('level-title').textContent=level.title;
+  document.getElementById('total-points').textContent=totalPts+' pts';
+
+  if(next){
+    const pct=Math.round((totalPts-level.xp)/(next.xp-level.xp)*100);
+    document.getElementById('xp-bar').style.width=pct+'%';
+    document.getElementById('xp-text').textContent=`${totalPts-level.xp} / ${next.xp-level.xp} XP`;
+  } else {
+    document.getElementById('xp-bar').style.width='100%';
+    document.getElementById('xp-text').textContent='MAX LEVEL';
+  }
+
+  // Greeting
+  const hr=new Date().getHours();
+  const greet=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
+  document.getElementById('greeting').textContent=greet+', Nellie!';
+  document.getElementById('today-date').textContent=formatDateLabel(todayStr());
+}
+
+// ================================================================
+//  INIT
+// ================================================================
+function init(){
+  // Apply saved theme
+  const theme=getTheme();
+  if(theme)applyTheme(theme);
+
+  // Set today's date
+  const dateEl=document.getElementById('log-date');
+  dateEl.value=todayStr();
+
+  showPage('log');
+  updateStatusBar();
+
+  // Try to pull messages from sheet
+  pullMessages();
+  // Pull messages every 2 minutes
+  setInterval(pullMessages,120000);
+
+  // Register service worker
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+}
+
+// Handle PIN modal enter key
+document.getElementById('pin-input').addEventListener('keydown',e=>{if(e.key==='Enter')checkPin()});
+
+init();
+</script>
+</body>
+</html>
